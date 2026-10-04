@@ -40,17 +40,11 @@ jobs:
           $dll = Get-ChildItem -Path . -Filter "partyfinder.dll" -Recurse | Select-Object -First 1
           if ($null -eq $dll) { throw "partyfinder.dll was not produced." }
 
-          $vswhere = "$env:ProgramFiles(x86)\Microsoft Visual Studio\Installer\vswhere.exe"
-          if (-not (Test-Path $vswhere)) { throw "vswhere.exe not found." }
-
-          $vsPath = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-          if (-not $vsPath) { throw "Visual Studio C++ tools not found." }
-
-          $dumpbin = Get-ChildItem -Path "$vsPath\VC\Tools\MSVC" -Filter dumpbin.exe -Recurse |
+          $dumpbin = Get-ChildItem -Path "C:\\Program Files\\Microsoft Visual Studio" -Filter dumpbin.exe -Recurse -ErrorAction SilentlyContinue |
             Where-Object { $_.FullName -match '\\bin\\Hostx86\\x86\\dumpbin\.exe$' } |
             Sort-Object FullName -Descending |
             Select-Object -First 1
-          if ($null -eq $dumpbin) { throw "dumpbin.exe not found in Visual Studio C++ tools." }
+          if ($null -eq $dumpbin) { throw "dumpbin.exe not found in Visual Studio installation." }
 
           & $dumpbin.FullName /headers $dll.FullName | Tee-Object -FilePath headers.txt
           if ($LASTEXITCODE -ne 0) { throw "dumpbin /headers failed." }
