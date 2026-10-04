@@ -1,0 +1,10 @@
+PartyFinder v0.13 - GitHub Build Upload
+
+1. Open your repository: https://github.com/zzyyzz1/PartyFinder
+2. Click: Add file -> Upload files
+3. Extract this ZIP on your PC first.
+4. Drag ALL contents of the extracted PartyFinder_GitHub_Upload folder into GitHub, including the .github folder.
+5. Click: Commit changes.
+6. Open the Actions tab and wait for "Build PartyFinder DLL" to finish.
+
+The workflow will build a Win32/x86 Ashita v4 plugin and upload partyfinder.dll as an artifact named PartyFinder-v0.13-Win32.
