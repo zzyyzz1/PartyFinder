@@ -1,0 +1,55 @@
+name: Build PartyFinder
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout PartyFinder
+        uses: actions/checkout@v4
+
+      - name: Checkout Ashita v4 SDK
+        uses: actions/checkout@v4
+        with:
+          repository: AshitaXI/Ashita-v4beta
+          path: ashita-sdk-src
+          sparse-checkout: |
+            plugins/sdk
+          sparse-checkout-cone-mode: false
+
+      - name: Copy Ashita SDK
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path sdk | Out-Null
+          Copy-Item -Path "ashita-sdk-src/plugins/sdk/*" -Destination "sdk" -Recurse -Force
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build PartyFinder Win32
+        shell: pwsh
+        run: |
+          msbuild PartyFinder.vcxproj /m /p:Configuration=Release /p:Platform=Win32
+
+      - name: Find built DLL
+        shell: pwsh
+        run: |
+          Get-ChildItem -Path . -Filter "partyfinder.dll" -Recurse
+          $dll = Get-ChildItem -Path . -Filter "partyfinder.dll" -Recurse | Select-Object -First 1
+          if ($null -eq $dll) {
+            throw "partyfinder.dll was not produced."
+          }
+          New-Item -ItemType Directory -Force -Path artifact | Out-Null
+          Copy-Item $dll.FullName "artifact/partyfinder.dll"
+
+      - name: Upload PartyFinder DLL
+        uses: actions/upload-artifact@v4
+        with:
+          name: PartyFinder-Win32
+          path: artifact/partyfinder.dll
+          if-no-files-found: error
