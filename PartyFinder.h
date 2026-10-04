@@ -16,7 +16,7 @@ public:
     const char* GetAuthor(void) const override { return "sbn"; }
     const char* GetDescription(void) const override { return "Native read-only /sea ingress capture diagnostic for PartyFinder."; }
     const char* GetLink(void) const override { return ""; }
-    double GetVersion(void) const override { return 0.16; }
+    double GetVersion(void) const override { return 0.17; }
     int32_t GetPriority(void) const override { return 0; }
     uint32_t GetFlags(void) const override { return (uint32_t)Ashita::PluginFlags::UseCommands; }
 
