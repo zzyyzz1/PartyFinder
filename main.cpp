@@ -184,6 +184,13 @@ void PartyFinder::StopCapture()
 
 void PartyFinder::PrintStatus()
 {
+    FlushCapture();
+    if (g_armed.load(std::memory_order_acquire) && m_captureUntil && GetTickCount64() >= m_captureUntil) {
+        g_armed.store(false, std::memory_order_release);
+        FlushCapture();
+        CloseCaptureFiles();
+        m_captureUntil = 0;
+    }
     if (!m_log) return;
     char msg[160];
     sprintf_s(msg, "[PartyFinder] hook=%s capture=%s dropped=%u", m_hookInstalled ? "yes" : "no", g_armed.load() ? "armed" : "off", g_dropped.load());
@@ -231,16 +238,4 @@ void PartyFinder::FlushCapture()
         g_read.store(r + 1, std::memory_order_release);
     }
     fflush(m_bin); fflush(m_txt);
-}
-
-void PartyFinder::Direct3DPresent(const RECT*, const RECT*, HWND, const RGNDATA*)
-{
-    FlushCapture();
-    if (g_armed.load(std::memory_order_acquire) && m_captureUntil && GetTickCount64() >= m_captureUntil) {
-        g_armed.store(false, std::memory_order_release);
-        FlushCapture();
-        CloseCaptureFiles();
-        m_captureUntil = 0;
-        if (m_log) m_log->Log((uint32_t)Ashita::LogLevel::Info, "PartyFinder", "15-second recv capture complete.");
-    }
 }
