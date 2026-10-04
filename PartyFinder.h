@@ -15,14 +15,18 @@ public:
     const char* GetAuthor(void) const override { return "sbn"; }
     const char* GetDescription(void) const override { return "Native /sea ingress diagnostic for PartyFinder."; }
     const char* GetLink(void) const override { return ""; }
-    double GetVersion(void) const override { return 0.13; }
+    double GetVersion(void) const override { return 0.14; }
     int32_t GetPriority(void) const override { return 0; }
-    uint32_t GetFlags(void) const override { return (uint32_t)Ashita::PluginFlags::LegacyDirect3D; }
+
+    // Commands only. Do not request Direct3D initialization.
+    uint32_t GetFlags(void) const override
+    {
+        return (uint32_t)Ashita::PluginFlags::UseCommands;
+    }
 
     bool Initialize(IAshitaCore* core, ILogManager* logger, const uint32_t id) override;
     void Release(void) override;
     bool HandleCommand(int32_t mode, const char* command, bool injected) override;
-    void Direct3DPresent(const RECT*, const RECT*, HWND, const RGNDATA*) override;
 
 private:
     IAshitaCore* m_core{};
