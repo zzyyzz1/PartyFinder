@@ -83,6 +83,9 @@ namespace
         const auto& dir = nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT];
         if (!dir.VirtualAddress || !dir.Size) return false;
 
+        FARPROC recvProc = GetProcAddress(GetModuleHandleA("ws2_32.dll"), "recv");
+        if (!recvProc) return false;
+
         auto imp = reinterpret_cast<IMAGE_IMPORT_DESCRIPTOR*>(base + dir.VirtualAddress);
         for (; imp->Name; ++imp)
         {
@@ -93,16 +96,29 @@ namespace
             auto names = imp->OriginalFirstThunk
                 ? reinterpret_cast<IMAGE_THUNK_DATA*>(base + imp->OriginalFirstThunk)
                 : nullptr;
-            if (!names) continue;
 
-            for (; names->u1.AddressOfData; ++names, ++thunk)
+            if (names)
             {
-                if (IMAGE_SNAP_BY_ORDINAL(names->u1.Ordinal)) continue;
-                auto ibn = reinterpret_cast<IMAGE_IMPORT_BY_NAME*>(base + names->u1.AddressOfData);
-                if (std::strcmp(reinterpret_cast<const char*>(ibn->Name), "recv") == 0)
+                for (; names->u1.AddressOfData; ++names, ++thunk)
                 {
-                    *outSlot = reinterpret_cast<ULONG_PTR*>(&thunk->u1.Function);
-                    return true;
+                    if (IMAGE_SNAP_BY_ORDINAL(names->u1.Ordinal)) continue;
+                    auto ibn = reinterpret_cast<IMAGE_IMPORT_BY_NAME*>(base + names->u1.AddressOfData);
+                    if (std::strcmp(reinterpret_cast<const char*>(ibn->Name), "recv") == 0)
+                    {
+                        *outSlot = reinterpret_cast<ULONG_PTR*>(&thunk->u1.Function);
+                        return true;
+                    }
+                }
+            }
+            else
+            {
+                for (; thunk->u1.Function; ++thunk)
+                {
+                    if (thunk->u1.Function == reinterpret_cast<ULONG_PTR>(recvProc))
+                    {
+                        *outSlot = reinterpret_cast<ULONG_PTR*>(&thunk->u1.Function);
+                        return true;
+                    }
                 }
             }
         }
@@ -249,7 +265,7 @@ bool PartyFinder::Initialize(IAshitaCore* core, ILogManager* logger, const uint3
     m_hookInstalled = InstallRecvHooks(skipped);
 
     char msg[256]{};
-    sprintf_s(msg, "[PartyFinder v0.16] Loaded. recv hooks=%zu, skipped=%zu. Commands: /pfcap, /pfcap status, /pfcap stop", g_hookCount, skipped);
+    sprintf_s(msg, "[PartyFinder v0.17] Loaded. recv hooks=%zu, skipped=%zu. Commands: /pfcap, /pfcap status, /pfcap stop", g_hookCount, skipped);
     Chat(m_core, msg);
 
     if (m_log)
@@ -361,7 +377,7 @@ bool PartyFinder::OpenCaptureFiles()
         return false;
     }
 
-    fprintf(m_txt, "PartyFinder v0.16 raw recv capture\n");
+    fprintf(m_txt, "PartyFinder v0.17 raw recv capture\n");
     fprintf(m_txt, "Capture-only diagnostic. Incoming bytes are not modified or blocked.\n");
     fprintf(m_txt, "Installed recv IAT hooks: %zu\n", g_hookCount);
     for (size_t i = 0; i < g_hookCount; ++i)
