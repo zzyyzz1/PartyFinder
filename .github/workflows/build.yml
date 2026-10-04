@@ -8,7 +8,6 @@ on:
 jobs:
   build:
     runs-on: windows-latest
-
     steps:
       - name: Checkout PartyFinder
         uses: actions/checkout@v4
@@ -31,25 +30,30 @@ jobs:
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
-      - name: Build PartyFinder Win32
+      - name: Build Win32 Release with warnings as errors
         shell: pwsh
-        run: |
-          msbuild PartyFinder.vcxproj /m /p:Configuration=Release /p:Platform=Win32
+        run: msbuild PartyFinder.vcxproj /m /p:Configuration=Release /p:Platform=Win32
 
-      - name: Find built DLL
+      - name: Verify PE and exports
         shell: pwsh
         run: |
-          Get-ChildItem -Path . -Filter "partyfinder.dll" -Recurse
           $dll = Get-ChildItem -Path . -Filter "partyfinder.dll" -Recurse | Select-Object -First 1
-          if ($null -eq $dll) {
-            throw "partyfinder.dll was not produced."
+          if ($null -eq $dll) { throw "partyfinder.dll was not produced." }
+          $dumpbin = (Get-Command dumpbin.exe -ErrorAction Stop).Source
+          & $dumpbin /headers $dll.FullName | Tee-Object -FilePath headers.txt
+          & $dumpbin /exports $dll.FullName | Tee-Object -FilePath exports.txt
+          if (-not (Select-String -Path headers.txt -Pattern "machine \(x86\)" -Quiet)) { throw "DLL is not x86." }
+          foreach ($name in @("expCreatePlugin","expDestroyPlugin","expGetInterfaceVersion")) {
+            if (-not (Select-String -Path exports.txt -Pattern $name -Quiet)) { throw "Missing export: $name" }
           }
           New-Item -ItemType Directory -Force -Path artifact | Out-Null
           Copy-Item $dll.FullName "artifact/partyfinder.dll"
+          Copy-Item headers.txt "artifact/headers.txt"
+          Copy-Item exports.txt "artifact/exports.txt"
 
       - name: Upload PartyFinder DLL
         uses: actions/upload-artifact@v4
         with:
-          name: PartyFinder-Win32
-          path: artifact/partyfinder.dll
+          name: PartyFinder-Win32-v0.16
+          path: artifact/
           if-no-files-found: error
