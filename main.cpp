@@ -142,8 +142,8 @@ bool PartyFinder::Initialize(IAshitaCore* core, ILogManager* logger, const uint3
     m_core = core; m_log = logger; m_id = id;
     g_shutdown.store(0);
     m_hookInstalled = InstallRecvHook();
-    if (m_log) m_log->Log(m_hookInstalled ? Ashita::LogLevel::Info : Ashita::LogLevel::Error,
-        m_hookInstalled ? "[PartyFinder] recv hook installed. Use /pfcap before /sea." : "[PartyFinder] recv import not found; hook not installed.");
+    if (m_log) m_log->Log((uint32_t)(m_hookInstalled ? Ashita::LogLevel::Info : Ashita::LogLevel::Error), "PartyFinder",
+        m_hookInstalled ? "recv hook installed. Use /pfcap before /sea." : "recv import not found; hook not installed.");
     return true;
 }
 
@@ -170,7 +170,7 @@ void PartyFinder::StartCapture()
     g_dropped.store(0);
     m_captureUntil = GetTickCount64() + 15000;
     g_armed.store(true, std::memory_order_release);
-    if (m_log) m_log->Log(Ashita::LogLevel::Info, "[PartyFinder] Raw recv capture armed for 15 seconds. Run /sea now.");
+    if (m_log) m_log->Log((uint32_t)Ashita::LogLevel::Info, "PartyFinder", "Raw recv capture armed for 15 seconds. Run /sea now.");
 }
 
 void PartyFinder::StopCapture()
@@ -179,7 +179,7 @@ void PartyFinder::StopCapture()
     m_captureUntil = 0;
     FlushCapture();
     CloseCaptureFiles();
-    if (m_log) m_log->Log(Ashita::LogLevel::Info, "[PartyFinder] Capture stopped.");
+    if (m_log) m_log->Log((uint32_t)Ashita::LogLevel::Info, "PartyFinder", "Capture stopped.");
 }
 
 void PartyFinder::PrintStatus()
@@ -187,7 +187,7 @@ void PartyFinder::PrintStatus()
     if (!m_log) return;
     char msg[160];
     sprintf_s(msg, "[PartyFinder] hook=%s capture=%s dropped=%u", m_hookInstalled ? "yes" : "no", g_armed.load() ? "armed" : "off", g_dropped.load());
-    m_log->Log(Ashita::LogLevel::Info, msg);
+    m_log->Log((uint32_t)Ashita::LogLevel::Info, "PartyFinder", msg);
 }
 
 bool PartyFinder::OpenCaptureFiles()
@@ -241,6 +241,6 @@ void PartyFinder::Direct3DPresent(const RECT*, const RECT*, HWND, const RGNDATA*
         FlushCapture();
         CloseCaptureFiles();
         m_captureUntil = 0;
-        if (m_log) m_log->Log(Ashita::LogLevel::Info, "[PartyFinder] 15-second recv capture complete.");
+        if (m_log) m_log->Log((uint32_t)Ashita::LogLevel::Info, "PartyFinder", "15-second recv capture complete.");
     }
 }
